@@ -1,1 +1,1 @@
-# Дискорд бот для яндекс музыки
+# bot ya.music from discord
