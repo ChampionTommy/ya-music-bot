@@ -24,6 +24,7 @@ class BotDiscord:
         self._queue_lock = asyncio.Lock()
         self._skip_event = asyncio.Event()
         self._current_play_task: Optional[asyncio.Task] = None
+        self._autocleanup_task: Optional[asyncio.Task] = None
         self.init_handlers()
 
     async def get_voice(self, ctx: commands.Context) -> discord.VoiceClient:
@@ -37,12 +38,14 @@ class BotDiscord:
 
     async def play_loop(self, ctx: commands.Context):
         while True:
-            # Если плейлист пуст — выходим
             if not self._player.playlist:
+                if self._autocleanup_task is None or self._autocleanup_task.done():
+                    self._autocleanup_task = asyncio.create_task(
+                        self._auto_leave(ctx, 600)
+                    )
                 self._current_play_task = None
                 return
 
-            # Берём трек
             async with self._queue_lock:
                 try:
                     source, title = await self._player.get_next_audio_source()
@@ -52,7 +55,6 @@ class BotDiscord:
 
             await ctx.send(f"Сейчас играет: {title}", mention_author=False)
 
-            # Проверяем голос
             if not self._voice:
                 await ctx.send(
                     "Бот не подключён к голосовому каналу", mention_author=False
@@ -60,33 +62,41 @@ class BotDiscord:
                 self._current_play_task = None
                 return
 
-            # Сбрасываем skip
             self._skip_event.clear()
 
-            # Если уже играет — стоп
             if self._voice.is_playing() or self._voice.is_paused():
                 self._voice.stop()
 
-            # Воспроизведение
             self._voice.play(source)
 
-            # Ждём окончания трека или skip
             while True:
-                # skip
                 if self._skip_event.is_set():
                     self._skip_event.clear()
                     if self._voice.is_playing():
                         self._voice.stop()
                     break
-
-                # трек закончился
                 if not self._voice.is_playing():
                     break
-
                 await asyncio.sleep(0.3)
 
-            # Выход из цикла
             self._current_play_task = None
+
+    async def _auto_leave(self, ctx: commands.Context, timeout: int):
+        """Автоотключение бота после `timeout` секунд простоя"""
+        await asyncio.sleep(timeout)
+        if self._player.playlist or (
+            self._current_play_task and not self._current_play_task.done()
+        ):
+            return
+        if self._voice:
+            if self._voice.is_playing():
+                self._voice.stop()
+            await self._voice.disconnect(force=True)
+            self._voice = None
+        self._player.playlist.clear()
+        await ctx.send(
+            "Бот автоматически покинул канал и очистил плейлист после 10 минут простоя."
+        )
 
     def start_new_playback(self, ctx: commands.Context):
         if not self._current_play_task or self._current_play_task.done():
@@ -174,6 +184,22 @@ class BotDiscord:
 
             self._player.playlist.clear()
             await ctx.send("Воспроизведение остановлено!", mention_author=False)
+
+        @self._bot.command()
+        async def leave(ctx: commands.Context):
+            if self._current_play_task and not self._current_play_task.done():
+                self._skip_event.set()
+                self._current_play_task.cancel()
+                self._current_play_task = None
+
+            if self._voice:
+                if self._voice.is_playing():
+                    self._voice.stop()
+                await self._voice.disconnect(force=True)
+                self._voice = None
+
+            self._player.playlist.clear()
+            await ctx.send("Бот покинул канал и плейлист очищен.", mention_author=False)
 
         @self._bot.command()
         async def nowplaying(ctx: commands.Context):
