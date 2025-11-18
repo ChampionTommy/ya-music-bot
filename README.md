@@ -100,3 +100,6 @@ DISCORD_BOT_COMMAND_PREFIX=
 
 на 1 ядре cpu загружено на 5%, нагрузки никакой нет.
 Хотел написать про daemon systemd, но настраивайте сами, chatgpt в помощь. Возможно закину docker на alpine.
+
+<img width="1659" height="300" alt="image" src="https://github.com/user-attachments/assets/f59ed5b5-20a7-4c56-a77f-c3525c7e1721" />
+
