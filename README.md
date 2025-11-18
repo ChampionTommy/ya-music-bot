@@ -72,3 +72,27 @@ python3 -m venv venv`
 
 Необходимо в корне создать файл `.env` и указать там yandex music tokern & discord bot token + prefix для команд.
 
+```
+DISCORD_BOT_TOKEN=
+YANDEX_MUSIC_TOKEN=
+DISCORD_BOT_COMMAND_PREFIX=
+```
+
+## commands
+
+### запуск альбома
+`/queue https://music.yandex.ru/album/<id>`
+### запуск чарта (запуск треков +- 1 минута)
+`/chart`
+### запуск артиста
+`/artist https://music.yandex.ru/artist/<id artist>`
+### запуск трека
+`/play https://music.yandex.ru/album/<id artist>/track/<id track>`
+
+## etc
+
+Запускатеся на windows и linux, главное установить зависимости, например на win просит gcc+ и доп компиляторы.
+В дальнейшем хотелось бы добавить "своя волна", "мне нравится" и "плейлисты рандомные"
+
+на 1 ядре cpu загружено на 5%, нагрузки никакой нет.
+Хотел написать про daemon systemd, но настраивайте сами, chatgpt в помощь. Возможно закину docker на alpine.
