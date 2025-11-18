@@ -1,16 +1,16 @@
 import os
 import sys
+
 import discord
 from dotenv import load_dotenv
 
-from bot import BotDiscord
-from player import Player
+from src.botDiscord import BotDiscord
+from src.yandexMusic import YandexMusic
 
 load_dotenv()
 
 
 def get_env_variable(name: str, default: str | None = None) -> str:
-    """Получение переменной окружения. Выбрасывает ошибку, если переменная не задана и нет default"""
     value = os.getenv(name)
     if value is None:
         if default is not None:
@@ -19,12 +19,12 @@ def get_env_variable(name: str, default: str | None = None) -> str:
     return value
 
 
-def create_player() -> Player:
+def create_player() -> YandexMusic:
     token = get_env_variable("YANDEX_MUSIC_TOKEN")
-    return Player(token)
+    return YandexMusic(token)
 
 
-def create_bot(player: Player) -> BotDiscord:
+def create_bot(player: YandexMusic) -> BotDiscord:
     token = get_env_variable("DISCORD_BOT_TOKEN")
     command_prefix = get_env_variable("DISCORD_BOT_COMMAND_PREFIX", "/")
     intents = discord.Intents.default()
@@ -32,32 +32,11 @@ def create_bot(player: Player) -> BotDiscord:
     return BotDiscord(token, command_prefix, intents, player)
 
 
-def check_yam_token(player: Player) -> bool:
-    """Простая проверка токена Яндекс Музыки"""
-    try:
-        if player._client is None:
-            raise ValueError("Клиент не инициализирован")
-        print("[ЯМ] Подключение к Яндекс Музыке успешно (токен валидный).")
-        return True
-    except Exception as e:
-        print(f"[ЯМ] Ошибка подключения: {e}")
-        return False
-
-
-def main() -> None:
+def main():
     try:
         player = create_player()
-    except RuntimeError as e:
-        print(f"[Ошибка] {e}")
-        sys.exit(1)
-
-    if not check_yam_token(player):
-        print("[Бот] Завершение запуска из-за ошибки с Яндекс Музыкой.")
-        sys.exit(1)
-
-    try:
         bot = create_bot(player)
-        bot.run()
+        bot.run()  # Discord создаёт свой event loop
     except RuntimeError as e:
         print(f"[Бот] Ошибка запуска: {e}")
         sys.exit(1)
