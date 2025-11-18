@@ -89,6 +89,10 @@ DISCORD_BOT_COMMAND_PREFIX=
 ### запуск трека
 `/play https://music.yandex.ru/album/<id artist>/track/<id track>`
 
+### при альбоме или плейлисте работает перелистывание треков
+`/skip`
+
+
 ## etc
 
 Запускатеся на windows и linux, главное установить зависимости, например на win просит gcc+ и доп компиляторы.
